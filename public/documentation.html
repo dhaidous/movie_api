@@ -15,32 +15,122 @@
 
     <h2>API Endpoints</h2>
 
+    <h3>Base URL</h3>
+    <p>All endpoints use the base URL: <code>http://localhost:8080</code></p>
+
     <h3>Movies</h3>
     <table border="1">
         <tr>
             <th>Request</th>
             <th>URL</th>
-            <th>Response</th>
+            <th>Description</th>
+            <th>Example Response</th>
         </tr>
         <tr>
             <td>GET</td>
-            <td>/movies</td>
-            <td>Returns a list of all movies</td>
+            <td>http://localhost:8080/movies</td>
+            <td>Returns a JSON array containing all movies with details such as title, genre, and director.</td>
+            <td>
+                <pre>
+[
+    {
+        "title": "The Shawshank Redemption",
+        "year": 1994,
+        "genre": {
+            "name": "Drama",
+            "description": "Dramatic and emotional storytelling."
+        },
+        "director": {
+            "name": "Frank Darabont",
+            "bio": "An American film director, screenwriter, and producer.",
+            "birthYear": 1959,
+            "deathYear": null
+        },
+        "description": "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
+        "imageUrl": "https://m.media-amazon.com/images/I/51NiGlapXlL._AC_SY679_.jpg",
+        "featured": true
+    },
+    ...
+]
+                </pre>
+            </td>
         </tr>
         <tr>
             <td>GET</td>
-            <td>/movies/:title</td>
-            <td>Returns data about a specific movie by title</td>
+            <td>http://localhost:8080/movies/:title</td>
+            <td>Returns data about a specific movie that matches the <code>title</code> parameter.</td>
+            <td>
+                <pre>
+{
+    "title": "The Shawshank Redemption",
+    "year": 1994,
+    "genre": {
+        "name": "Drama",
+        "description": "Dramatic and emotional storytelling."
+    },
+    "director": {
+        "name": "Frank Darabont",
+        "bio": "An American film director, screenwriter, and producer.",
+        "birthYear": 1959,
+        "deathYear": null
+    },
+    "description": "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
+    "imageUrl": "https://m.media-amazon.com/images/I/51NiGlapXlL._AC_SY679_.jpg",
+    "featured": true
+}
+                </pre>
+            </td>
         </tr>
         <tr>
             <td>GET</td>
-            <td>/genres/:name</td>
-            <td>Returns data about a genre by name</td>
+            <td>http://localhost:8080/genres/:name</td>
+            <td>Returns data about movies of the specified genre.</td>
+            <td>
+                <pre>
+[
+    {
+        "title": "The Shawshank Redemption",
+        "year": 1994,
+        "genre": {
+            "name": "Drama",
+            "description": "Dramatic and emotional storytelling."
+        },
+        "director": "Frank Darabont",
+        "description": "Two imprisoned men bond over a number of years...",
+        "imageUrl": "https://...",
+        "featured": true
+    },
+    ...
+]
+                </pre>
+            </td>
         </tr>
         <tr>
             <td>GET</td>
-            <td>/directors/:name</td>
-            <td>Returns data about a director by name</td>
+            <td>http://localhost:8080/directors/:name</td>
+            <td>Returns data about the director and the movies they directed.</td>
+            <td>
+                <pre>
+{
+    "director": {
+        "name": "Frank Darabont",
+        "bio": "An American film director, screenwriter, and producer.",
+        "birthYear": 1959,
+        "deathYear": null
+    },
+    "movies": [
+        {
+            "title": "The Shawshank Redemption",
+            "year": 1994,
+            "genre": "Drama",
+            "description": "Two imprisoned men bond over a number of years...",
+            "imageUrl": "https://...",
+            "featured": true
+        }
+    ]
+}
+                </pre>
+            </td>
         </tr>
     </table>
 
@@ -54,60 +144,49 @@
             <th>Response</th>
         </tr>
         <tr>
-            <td>GET</td>
-            <td>/movies</td>
-            <td>None</td>
-            <td>None</td>
-            <td>Returns a list of all movies.</td>
-        </tr>
-        <tr>
-            <td>GET</td>
-            <td>/movies/:title</td>
-            <td>title (required) - The title of the movie</td>
-            <td>None</td>
-            <td>Returns data about the movie with the specified title.</td>
-        </tr>
-        <tr>
             <td>POST</td>
-            <td>/users</td>
+            <td>http://localhost:8080/users</td>
             <td>None</td>
             <td>
                 <pre>
 {
-  "username": "newuser"
+  "username": "newuser",
+  "password": "password123"
 }
                 </pre>
             </td>
-            <td>Returns confirmation that the user has been registered.</td>
+            <td>Creates a new user and returns the newly created user data.</td>
         </tr>
         <tr>
             <td>POST</td>
-            <td>/users/:username/favorites/:movieId</td>
+            <td>http://localhost:8080/users/:id/favorites/:movieId</td>
             <td>
-                username (required) - The username<br>
-                movieId (required) - The ID of the movie
+                <ul>
+                    <li><code>id</code> (required) - The ID of the user</li>
+                    <li><code>movieId</code> (required) - The ID of the movie</li>
+                </ul>
             </td>
             <td>None</td>
-            <td>Returns confirmation that the movie has been added to the user's favorites.</td>
+            <td>Adds the movie to the user's favorite list and returns the updated user data.</td>
         </tr>
         <tr>
             <td>DELETE</td>
-            <td>/users/:username/favorites/:movieId</td>
+            <td>http://localhost:8080/users/:id/favorites/:movieId</td>
             <td>
-                username (required) - The username<br>
-                movieId (required) - The ID of the movie
+                <ul>
+                    <li><code>id</code> (required) - The ID of the user</li>
+                    <li><code>movieId</code> (required) - The ID of the movie</li>
+                </ul>
             </td>
             <td>None</td>
-            <td>Returns confirmation that the movie has been removed from the user's favorites.</td>
+            <td>Removes the movie from the user's favorite list and returns the updated user data.</td>
         </tr>
         <tr>
             <td>DELETE</td>
-            <td>/users/:username</td>
-            <td>
-                username (required) - The username of the user to deregister
-            </td>
+            <td>http://localhost:8080/users/:id</td>
+            <td><code>id</code> (required) - The ID of the user to deregister</td>
             <td>None</td>
-            <td>Returns confirmation that the user has been deregistered.</td>
+            <td>Deletes the user and returns confirmation.</td>
         </tr>
     </table>
 </body>
