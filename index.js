@@ -232,84 +232,99 @@ app.post('/users', (req, res) => {
 });
 
 // Allow users to update their user info
-app.put('/users/:username', (req, res) => {
-    Users.findOneAndUpdate(
-        { username: req.params.username },
-        {
-            $set: {
-                username: req.body.username,
-                password: req.body.password,
-                email: req.body.email,
-                birthday: req.body.birthday
-            }
-        },
-        { new: true }, // Return the updated document
-        (err, updatedUser) => {
-            if (err) {
-                console.error(err);
-                res.status(500).send('Error: ' + err);
-            } else {
-                res.status(200).json(updatedUser);
-            }
+app.put('/users/:username', async (req, res) => {
+    try {
+        const updatedUser = await Users.findOneAndUpdate(
+            { username: req.params.username }, // Find user by username
+            {
+                $set: {
+                    username: req.body.username, // Update fields from request body
+                    password: req.body.password,
+                    email: req.body.email,
+                    birthday: req.body.birthday
+                }
+            },
+            { new: true, runValidators: true } // Return the updated document and run schema validators
+        );
+
+        if (!updatedUser) {
+            return res.status(404).send('User not found.');
         }
-    );
+
+        return res.status(200).json(updatedUser); // Return the updated user
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send('Error: ' + err);
+    }
 });
+
+
 
 
 // Add movie to user's favorites
 // Allow users to add a movie to their list of favorites
-app.post('/users/:username/movies/:movieId', (req, res) => {
-    Users.findOneAndUpdate(
-        { username: req.params.username },
-        { $push: { favoriteMovies: req.params.movieId } }, // Add movie ID to the array
-        { new: true }, // Return the updated document
-        (err, updatedUser) => {
-            if (err) {
-                console.error(err);
-                res.status(500).send('Error: ' + err);
-            } else {
-                res.status(200).json(updatedUser);
-            }
+app.post('/users/:username/movies/:movieId', async (req, res) => {
+    try {
+        const updatedUser = await Users.findOneAndUpdate(
+            { username: req.params.username },
+            { $push: { favoriteMovies: req.params.movieId } }, // Add movie ID to the array
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedUser) {
+            return res.status(404).send('User not found.');
         }
-    );
+
+        return res.status(200).json(updatedUser); // Return the updated user
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send('Error: ' + err);
+    }
 });
+
 
 
 // Remove movie from user's favorites
 // Allow users to remove a movie from their list of favorites
-app.delete('/users/:username/movies/:movieId', (req, res) => {
-    Users.findOneAndUpdate(
-        { username: req.params.username },
-        { $pull: { favoriteMovies: req.params.movieId } }, // Remove movie ID from the array
-        { new: true }, // Return the updated document
-        (err, updatedUser) => {
-            if (err) {
-                console.error(err);
-                res.status(500).send('Error: ' + err);
-            } else {
-                res.status(200).json(updatedUser);
-            }
+app.delete('/users/:username/movies/:movieId', async (req, res) => {
+    try {
+        const updatedUser = await Users.findOneAndUpdate(
+            { username: req.params.username },
+            { $pull: { favoriteMovies: req.params.movieId } }, // Remove movie ID from the array
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedUser) {
+            return res.status(404).send('User not found.');
         }
-    );
+
+        return res.status(200).json(updatedUser); // Return the updated user
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send('Error: ' + err);
+    }
 });
+
 
 
 // Delete user
-// Allow existing users to deregister
-app.delete('/users/:username', (req, res) => {
-    Users.findOneAndRemove({ username: req.params.username })
-        .then((user) => {
-            if (!user) {
-                res.status(400).send(req.params.username + ' was not found.');
-            } else {
-                res.status(200).send(req.params.username + ' was deleted.');
-            }
-        })
-        .catch((err) => {
-            console.error(err);
-            res.status(500).send('Error: ' + err);
-        });
+// Delete user (Allow existing users to deregister)
+app.delete('/users/:username', async (req, res) => {
+    try {
+        const user = await Users.findOneAndDelete({ username: req.params.username });
+
+        if (!user) {
+            return res.status(404).send(req.params.username + ' was not found.');
+        }
+
+        return res.status(200).send(req.params.username + ' was deleted.');
+    } catch (err) {
+        console.error(err);
+        return res.status(500).send('Error: ' + err);
+    }
 });
+
+
 
 
 // Error handling middleware
