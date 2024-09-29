@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const uuid = require('uuid');  // Import uuid for unique IDs
+const bodyParser = require('body-parser');
 
 //Imports from models.js
 const mongoose = require('mongoose');
@@ -19,6 +20,17 @@ const port = 8080;
 
 app.use(morgan('common'));
 app.use(express.json());  // Add this to parse JSON request bodies
+app.use(bodyParser.urlencoded({ extended: true }));
+
+const { generateJWTToken } = require('./auth');
+const bcrypt = require('bcrypt');
+
+
+let auth = require('./auth')(app);
+
+const passport = require('passport');
+require('./passport');
+
 
 // REST API routes and other code follow...
 
@@ -123,6 +135,7 @@ app.get('/', (req, res) => {
 });
 
 // Allow admin to add a new movie
+/*
 app.post('/movies', (req, res) => {
     Movies.create(req.body)
         .then((newMovie) => {
@@ -133,6 +146,18 @@ app.post('/movies', (req, res) => {
             res.status(500).send('Error: ' + err);
         });
 });
+*/
+app.get('/movies', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    await Movies.find()
+        .then((movies) => {
+            res.status(201).json(movies);
+        })
+        .catch((error) => {
+            console.error(error);
+            res.status(500).send('Error: ' + error);
+        });
+});
+
 
 
 // Get all movies
@@ -202,22 +227,28 @@ app.get('/movies/directors/:directorName', (req, res) => {
         });
 });
 
+
+
 // Create a new user
-// Allow new users to register
 app.post('/users', (req, res) => {
-    Users.findOne({ username: req.body.username }) // Check if user exists
+    Users.findOne({ username: req.body.username }) // Check if the user exists
         .then((user) => {
             if (user) {
                 return res.status(400).send(req.body.username + ' already exists.');
             } else {
                 Users.create({
                     username: req.body.username,
-                    password: req.body.password,
+                    password: req.body.password, // Make sure you're hashing passwords securely in real implementations
                     email: req.body.email,
                     birthday: req.body.birthday
                 })
                     .then((newUser) => {
-                        res.status(201).json(newUser);
+                        // Generate a JWT token for the new user
+                        let token = generateJWTToken(newUser.toJSON());
+                        res.status(201).json({
+                            user: newUser,
+                            token: token  // Send the JWT token with the user data
+                        });
                     })
                     .catch((err) => {
                         console.error(err);
@@ -231,6 +262,7 @@ app.post('/users', (req, res) => {
         });
 });
 
+/*
 // Allow users to update their user info
 app.put('/users/:username', async (req, res) => {
     try {
@@ -257,6 +289,57 @@ app.put('/users/:username', async (req, res) => {
         return res.status(500).send('Error: ' + err);
     }
 });
+*/
+
+
+app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        // Debug logs to check values
+        console.log('req.user:', req.user);
+        console.log('req.params.Username:', req.params.Username);
+
+        // Check if req.user is populated and compare usernames (case-insensitive)
+        if (!req.user) {
+            return res.status(401).send('Unauthorized: req.user is undefined');
+        }
+
+        // Corrected to use req.user.username instead of req.user.Username
+        if (req.user.username.toLowerCase() !== req.params.Username.toLowerCase()) {
+            return res.status(400).send('Permission denied: You can only update your own profile.');
+        }
+
+        // Hash password if it's being updated
+        let updatedFields = {
+            Username: req.body.Username || req.user.username, // Keep old username if not changing
+            Email: req.body.Email,
+            Birthday: req.body.Birthday
+        };
+
+        if (req.body.Password) {
+            const hashedPassword = await bcrypt.hash(req.body.Password, 10); // Hash the password
+            updatedFields.Password = hashedPassword;
+        }
+
+        // Find user and update
+        const updatedUser = await Users.findOneAndUpdate(
+            { username: req.params.Username },
+            { $set: updatedFields },
+            { new: true }  // Return the updated user document
+        );
+
+        if (!updatedUser) {
+            return res.status(404).send('User not found');
+        }
+
+        // Return the updated user
+        return res.json(updatedUser);
+    } catch (err) {
+        console.error('Error:', err);
+        return res.status(500).send('Error: ' + err.message);
+    }
+});
+
+
 
 
 
@@ -325,8 +408,6 @@ app.delete('/users/:username', async (req, res) => {
 });
 
 
-
-
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -337,3 +418,4 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+
