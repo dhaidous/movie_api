@@ -16,7 +16,6 @@ mongoose.connect('mongodb://localhost:27017/moviesDB')
 
 // Create Express app
 const app = express();
-const port = 8080;
 
 app.use(morgan('common'));
 app.use(express.json());  // Add this to parse JSON request bodies
@@ -24,7 +23,23 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const { generateJWTToken } = require('./auth');
 const bcrypt = require('bcrypt');
+const cors = require('cors');
+const { check, validationResult } = require('express-validator');  // Insert here
 
+let allowedOrigins = ['http://localhost:8080', 'http://testsite.com'];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) { // If a specific origin isn’t found on the list of allowed origins
+            let message = 'The CORS policy for this application doesn’t allow access from origin ' + origin;
+            return callback(new Error(message), false);
+        }
+        return callback(null, true);
+    }
+}));
+
+/* rest of code goes here*/
 
 let auth = require('./auth')(app);
 
@@ -230,37 +245,51 @@ app.get('/movies/directors/:directorName', (req, res) => {
 
 
 // Create a new user
-app.post('/users', (req, res) => {
-    Users.findOne({ username: req.body.username }) // Check if the user exists
-        .then((user) => {
-            if (user) {
-                return res.status(400).send(req.body.username + ' already exists.');
-            } else {
-                Users.create({
-                    username: req.body.username,
-                    password: req.body.password, // Make sure you're hashing passwords securely in real implementations
-                    email: req.body.email,
-                    birthday: req.body.birthday
-                })
-                    .then((newUser) => {
-                        // Generate a JWT token for the new user
-                        let token = generateJWTToken(newUser.toJSON());
-                        res.status(201).json({
-                            user: newUser,
-                            token: token  // Send the JWT token with the user data
+app.post('/users', async (req, res) =>
+    // Validation logic here for request
+    //you can either use a chain of methods like .not().isEmpty()
+    //which means "opposite of isEmpty" in plain english "is not empty"
+    //or use .isLength({min: 5}) which means
+    //minimum value of 5 characters are only allowed
+    [
+        check('Username', 'Username is required').isLength({ min: 5 }),
+        check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
+        check('Password', 'Password is required').not().isEmpty(),
+        check('Email', 'Email does not appear to be valid').isEmail()
+    ], async (req, res) => {
+
+        // check the validation object for errors
+        let errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array() });
+        }
+        let hashedPassword = Users.hashPassword(req.body.Password);
+        await Users.findOne({ Username: req.body.Username }) // Search to see if a user with the requested username already exists
+            .then((user) => {
+                if (user) {
+                    //If the user is found, send a response that it already exists
+                    return res.status(400).send(req.body.Username + ' already exists');
+                } else {
+                    Users
+                        .create({
+                            Username: req.body.Username,
+                            Password: hashedPassword,
+                            Email: req.body.Email,
+                            Birthday: req.body.Birthday
+                        })
+                        .then((user) => { res.status(201).json(user) })
+                        .catch((error) => {
+                            console.error(error);
+                            res.status(500).send('Error: ' + error);
                         });
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                        res.status(500).send('Error: ' + err);
-                    });
-            }
-        })
-        .catch((err) => {
-            console.error(err);
-            res.status(500).send('Error: ' + err);
-        });
-});
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+                res.status(500).send('Error: ' + error);
+            });
+    });
 
 /*
 // Allow users to update their user info
@@ -343,7 +372,6 @@ app.put('/users/:Username', passport.authenticate('jwt', { session: false }), as
 
 
 
-
 // Add movie to user's favorites
 // Allow users to add a movie to their list of favorites
 app.post('/users/:username/movies/:movieId', async (req, res) => {
@@ -415,7 +443,8 @@ app.use((err, req, res, next) => {
 });
 
 // Start the server
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+const port = process.env.PORT || 8080;
+app.listen(port, '0.0.0.0', () => {
+    console.log('Listening on Port ' + port);
 });
 
