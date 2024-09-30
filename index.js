@@ -10,11 +10,13 @@ const Movies = Models.Movie;
 const Users = Models.User;
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/moviesDB')
+/* mongoose.connect('mongodb://localhost:27017/moviesDB')
     .then(() => console.log('Connected to MongoDB'))
-    .catch((err) => console.error('MongoDB connection error:', err));
+    .catch((err) => console.error('MongoDB connection error:', err));*/
 
-// Create Express app
+mongoose.connect(process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+('mongodb+srv://haidous21:17qKGpgfj319IAWm@mydb.nq0kh.mongodb.net/?retryWrites=true&w=majority&appName=myDB
+    // Create Express app
 const app = express();
 
 app.use(morgan('common'));
