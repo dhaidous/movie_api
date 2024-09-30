@@ -15,8 +15,8 @@ const Users = Models.User;
     .catch((err) => console.error('MongoDB connection error:', err));*/
 
 mongoose.connect(process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-('mongodb+srv://haidous21:17qKGpgfj319IAWm@mydb.nq0kh.mongodb.net/?retryWrites=true&w=majority&appName=myDB
-    // Create Express app
+mongoose.connect('mongodb+srv://haidous21:17qKGpgfj319IAWm@mydb.nq0kh.mongodb.net/myDB?retryWrites=true&w=majority', { useNewUrlParser: true, useUnifiedTopology: true });
+// Create Express app
 const app = express();
 
 app.use(morgan('common'));
