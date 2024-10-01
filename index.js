@@ -247,8 +247,8 @@ app.post('/users', validateUser, async (req, res) => {
 
     try {
         // Check if the user already exists
-        const user = await Users.findOne({ Username: req.body.Username });
-        if (user) {
+        const existingUser = await Users.findOne({ Username: req.body.Username });
+        if (existingUser) {
             return res.status(400).send(`${req.body.Username} already exists`);
         }
 
@@ -260,11 +260,11 @@ app.post('/users', validateUser, async (req, res) => {
             Birthday: req.body.Birthday
         });
 
-        // Create a token
+        // Create a token using the newly created user
         const token = jwt.sign(
             {
-                userId: user._id,  // Payload information
-                username: user.Username
+                userId: newUser._id,  // Use newUser here
+                username: newUser.Username
             },
             'your_secret_key',   // Secret key used for signing the token
             { expiresIn: '1h' }  // Token expiration time (optional)
@@ -277,6 +277,8 @@ app.post('/users', validateUser, async (req, res) => {
         return res.status(500).send('Error: ' + error);
     }
 });
+
+
 app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         // Ensure the logged-in user is the one trying to update the profile
