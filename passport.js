@@ -44,18 +44,18 @@ passport.use(
 // JWT Strategy for authentication using JWT token
 passport.use(new JWTStrategy({
     jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken(),
-    secretOrKey: 'your_jwt_secret'
+    secretOrKey: 'your_jwt_secret'  // Use the same secret as in the POST route
 }, async (jwtPayload, callback) => {
-    // Note the change: using jwtPayload.username to match the token payload
-    return await Users.findOne({ Username: jwtPayload.username })
-        .then((user) => {
-            if (user) {
-                return callback(null, user);
-            } else {
-                return callback(null, false, { message: 'User not found.' });
-            }
-        })
-        .catch((error) => {
-            return callback(error);
-        });
+    try {
+        // Use the username from jwtPayload
+        const user = await Users.findOne({ Username: jwtPayload.username });
+
+        if (user) {
+            return callback(null, user);
+        } else {
+            return callback(null, false, { message: 'User not found' });
+        }
+    } catch (error) {
+        return callback(error, false);
+    }
 }));

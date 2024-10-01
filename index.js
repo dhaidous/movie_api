@@ -234,7 +234,6 @@ const validateUser = [
     check('Email', 'Email must be valid').isEmail()
 ];
 
-// User registration route
 app.post('/users', validateUser, async (req, res) => {
     // Check the validation result
     const errors = validationResult(req);
@@ -247,8 +246,8 @@ app.post('/users', validateUser, async (req, res) => {
 
     try {
         // Check if the user already exists
-        const existingUser = await Users.findOne({ Username: req.body.Username });
-        if (existingUser) {
+        const user = await Users.findOne({ Username: req.body.Username });
+        if (user) {
             return res.status(400).send(`${req.body.Username} already exists`);
         }
 
@@ -260,14 +259,14 @@ app.post('/users', validateUser, async (req, res) => {
             Birthday: req.body.Birthday
         });
 
-        // Create a token using the newly created user
+        // Create a token with the correct payload
         const token = jwt.sign(
             {
-                userId: newUser._id,  // Use newUser here
-                username: newUser.Username
+                userId: newUser._id,  // Reference the new user's ID
+                username: newUser.Username  // Username
             },
-            'your_secret_key',   // Secret key used for signing the token
-            { expiresIn: '1h' }  // Token expiration time (optional)
+            'your_jwt_secret',   // Replace this with your actual secret key
+            { expiresIn: '1h' }  // Token expiration (optional)
         );
 
         // Return the new user and token
@@ -277,7 +276,6 @@ app.post('/users', validateUser, async (req, res) => {
         return res.status(500).send('Error: ' + error);
     }
 });
-
 
 app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
