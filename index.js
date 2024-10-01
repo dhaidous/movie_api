@@ -233,6 +233,12 @@ app.get('/movies/directors/:directorName', (req, res) => {
         });
 });
 
+
+
+// User registration route
+const jwt = require('jsonwebtoken');
+const secretKey = 'yourSecretKey'; // Use environment variables in production
+
 // Validation middleware
 const validateUser = [
     check('Username', 'Username is required and must be at least 5 characters').isLength({ min: 5 }),
@@ -267,13 +273,20 @@ app.post('/users', validateUser, async (req, res) => {
             Birthday: req.body.Birthday
         });
 
-        return res.status(201).json(newUser);
+        // Generate a JWT token
+        const token = jwt.sign(
+            { userId: newUser._id, username: newUser.Username },
+            secretKey,
+            { expiresIn: '1h' }  // Token will expire in 1 hour
+        );
+
+        // Return the new user and token
+        return res.status(201).json({ user: newUser, token: token });
     } catch (error) {
         console.error(error);
         return res.status(500).send('Error: ' + error);
     }
 });
-
 
 app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
