@@ -260,11 +260,14 @@ app.post('/users', validateUser, async (req, res) => {
             Birthday: req.body.Birthday
         });
 
-        // Generate a JWT token
+        // Create a token
         const token = jwt.sign(
-            { userId: newUser._id, username: newUser.Username },
-            secretKey,
-            { expiresIn: '1h' }  // Token will expire in 1 hour
+            {
+                userId: user._id,  // Payload information
+                username: user.Username
+            },
+            'your_secret_key',   // Secret key used for signing the token
+            { expiresIn: '1h' }  // Token expiration time (optional)
         );
 
         // Return the new user and token
