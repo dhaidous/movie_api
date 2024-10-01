@@ -245,10 +245,6 @@ app.get('/movies/directors/:directorName', (req, res) => {
 });
 
 
-
-// Create a new user
-const { check, validationResult } = require('express-validator');
-
 // Validation middleware
 const validateUser = [
     check('Username', 'Username is required and must be at least 5 characters').isLength({ min: 5 }),
