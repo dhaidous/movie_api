@@ -15,7 +15,7 @@ const Users = Models.User;
     .catch((err) => console.error('MongoDB connection error:', err));*/
 
 mongoose.connect(process.env.CONNECTION_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-mongoose.connect('mongodb+srv://haidous21:17qKGpgfj319IAWm@mydb.nq0kh.mongodb.net/myDB?retryWrites=true&w=majority', { useNewUrlParser: true, useUnifiedTopology: true });
+//mongoose.connect('mongodb+srv://haidous21:17qKGpgfj319IAWm@mydb.nq0kh.mongodb.net/myDB?retryWrites=true&w=majority', { useNewUrlParser: true, useUnifiedTopology: true });
 // Create Express app
 const app = express();
 
@@ -247,51 +247,49 @@ app.get('/movies/directors/:directorName', (req, res) => {
 
 
 // Create a new user
-app.post('/users', async (req, res) =>
-    // Validation logic here for request
-    //you can either use a chain of methods like .not().isEmpty()
-    //which means "opposite of isEmpty" in plain english "is not empty"
-    //or use .isLength({min: 5}) which means
-    //minimum value of 5 characters are only allowed
-    [
-        check('Username', 'Username is required').isLength({ min: 5 }),
-        check('Username', 'Username contains non alphanumeric characters - not allowed.').isAlphanumeric(),
-        check('Password', 'Password is required').not().isEmpty(),
-        check('Email', 'Email does not appear to be valid').isEmail()
-    ], async (req, res) => {
+const { check, validationResult } = require('express-validator');
 
-        // check the validation object for errors
-        let errors = validationResult(req);
+// Validation middleware
+const validateUser = [
+    check('Username', 'Username is required and must be at least 5 characters').isLength({ min: 5 }),
+    check('Username', 'Username must contain only alphanumeric characters').isAlphanumeric(),
+    check('Password', 'Password is required').not().isEmpty(),
+    check('Email', 'Email must be valid').isEmail()
+];
 
-        if (!errors.isEmpty()) {
-            return res.status(422).json({ errors: errors.array() });
+// User registration route
+app.post('/users', validateUser, async (req, res) => {
+    // Check the validation result
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+
+    // Hash the password
+    const hashedPassword = Users.hashPassword(req.body.Password);
+
+    try {
+        // Check if the user already exists
+        const user = await Users.findOne({ Username: req.body.Username });
+        if (user) {
+            return res.status(400).send(`${req.body.Username} already exists`);
         }
-        let hashedPassword = Users.hashPassword(req.body.Password);
-        await Users.findOne({ Username: req.body.Username }) // Search to see if a user with the requested username already exists
-            .then((user) => {
-                if (user) {
-                    //If the user is found, send a response that it already exists
-                    return res.status(400).send(req.body.Username + ' already exists');
-                } else {
-                    Users
-                        .create({
-                            Username: req.body.Username,
-                            Password: hashedPassword,
-                            Email: req.body.Email,
-                            Birthday: req.body.Birthday
-                        })
-                        .then((user) => { res.status(201).json(user) })
-                        .catch((error) => {
-                            console.error(error);
-                            res.status(500).send('Error: ' + error);
-                        });
-                }
-            })
-            .catch((error) => {
-                console.error(error);
-                res.status(500).send('Error: ' + error);
-            });
-    });
+
+        // Create a new user
+        const newUser = await Users.create({
+            Username: req.body.Username,
+            Password: hashedPassword,
+            Email: req.body.Email,
+            Birthday: req.body.Birthday
+        });
+
+        return res.status(201).json(newUser);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send('Error: ' + error);
+    }
+});
+
 
 /*
 // Allow users to update their user info
