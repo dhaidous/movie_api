@@ -41,16 +41,10 @@ app.use(cors({
     }
 }));
 
-/* rest of code goes here*/
-
 let auth = require('./auth')(app);
 
 const passport = require('passport');
 require('./passport');
-
-
-// REST API routes and other code follow...
-
 
 let users = [];  // Array to store users
 const movies = [
@@ -175,8 +169,6 @@ app.get('/movies', passport.authenticate('jwt', { session: false }), async (req,
         });
 });
 
-
-
 // Get all movies
 app.get('/movies', (req, res) => {
     Movies.find()
@@ -188,8 +180,6 @@ app.get('/movies', (req, res) => {
             res.status(500).send('Error: ' + err);
         });
 });
-
-
 
 // Get movie by title (with detailed info like description, genre, director, etc.)
 // Return data about a single movie by title
@@ -226,7 +216,6 @@ app.get('/movies/genre/:genreName', (req, res) => {
         });
 });
 
-
 // Get data about a director by director name
 // Return data about a director by director name
 app.get('/movies/directors/:directorName', (req, res) => {
@@ -243,7 +232,6 @@ app.get('/movies/directors/:directorName', (req, res) => {
             res.status(500).send('Error: ' + err);
         });
 });
-
 
 // Validation middleware
 const validateUser = [
@@ -285,36 +273,6 @@ app.post('/users', validateUser, async (req, res) => {
         return res.status(500).send('Error: ' + error);
     }
 });
-
-
-/*
-// Allow users to update their user info
-app.put('/users/:username', async (req, res) => {
-    try {
-        const updatedUser = await Users.findOneAndUpdate(
-            { username: req.params.username }, // Find user by username
-            {
-                $set: {
-                    username: req.body.username, // Update fields from request body
-                    password: req.body.password,
-                    email: req.body.email,
-                    birthday: req.body.birthday
-                }
-            },
-            { new: true, runValidators: true } // Return the updated document and run schema validators
-        );
-
-        if (!updatedUser) {
-            return res.status(404).send('User not found.');
-        }
-
-        return res.status(200).json(updatedUser); // Return the updated user
-    } catch (err) {
-        console.error(err);
-        return res.status(500).send('Error: ' + err);
-    }
-});
-*/
 
 
 app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
@@ -364,10 +322,6 @@ app.put('/users/:Username', passport.authenticate('jwt', { session: false }), as
     }
 });
 
-
-
-
-
 // Add movie to user's favorites
 // Allow users to add a movie to their list of favorites
 app.post('/users/:username/movies/:movieId', async (req, res) => {
@@ -388,7 +342,6 @@ app.post('/users/:username/movies/:movieId', async (req, res) => {
         return res.status(500).send('Error: ' + err);
     }
 });
-
 
 
 // Remove movie from user's favorites
@@ -412,8 +365,6 @@ app.delete('/users/:username/movies/:movieId', async (req, res) => {
     }
 });
 
-
-
 // Delete user
 // Delete user (Allow existing users to deregister)
 app.delete('/users/:username', async (req, res) => {
@@ -431,7 +382,6 @@ app.delete('/users/:username', async (req, res) => {
     }
 });
 
-
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -443,4 +393,3 @@ const port = process.env.PORT || 8080;
 app.listen(port, '0.0.0.0', () => {
     console.log('Listening on Port ' + port);
 });
-
