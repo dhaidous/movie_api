@@ -145,19 +145,6 @@ app.get('/', (req, res) => {
     res.send('Welcome to My Movie API!');
 });
 
-// Allow admin to add a new movie
-/*
-app.post('/movies', (req, res) => {
-    Movies.create(req.body)
-        .then((newMovie) => {
-            res.status(201).json(newMovie); // Send back the newly created movie as a response
-        })
-        .catch((err) => {
-            console.error(err);
-            res.status(500).send('Error: ' + err);
-        });
-});
-*/
 app.get('/movies', passport.authenticate('jwt', { session: false }), async (req, res) => {
     await Movies.find()
         .then((movies) => {
@@ -287,50 +274,39 @@ app.post('/users', validateUser, async (req, res) => {
         return res.status(500).send('Error: ' + error);
     }
 });
-
 app.put('/users/:Username', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        // Debug logs to check values
-        console.log('req.user:', req.user);
-        console.log('req.params.Username:', req.params.Username);
-
-        // Check if req.user is populated and compare usernames (case-insensitive)
-        if (!req.user) {
-            return res.status(401).send('Unauthorized: req.user is undefined');
+        // Ensure the logged-in user is the one trying to update the profile
+        if (req.user.Username.toLowerCase() !== req.params.Username.toLowerCase()) {
+            return res.status(403).send('Permission denied: You can only update your own profile.');
         }
 
-        // Corrected to use req.user.username instead of req.user.Username
-        if (req.user.username.toLowerCase() !== req.params.Username.toLowerCase()) {
-            return res.status(400).send('Permission denied: You can only update your own profile.');
-        }
-
-        // Hash password if it's being updated
+        // Prepare the fields for update
         let updatedFields = {
-            Username: req.body.Username || req.user.username, // Keep old username if not changing
-            Email: req.body.Email,
-            Birthday: req.body.Birthday
+            Username: req.body.Username || req.user.Username, // Default to current Username if not provided
+            Email: req.body.Email || req.user.Email,          // Default to current Email if not provided
+            Birthday: req.body.Birthday || req.user.Birthday  // Default to current Birthday if not provided
         };
 
+        // If Password is provided, hash it before storing
         if (req.body.Password) {
-            const hashedPassword = await bcrypt.hash(req.body.Password, 10); // Hash the password
-            updatedFields.Password = hashedPassword;
+            updatedFields.Password = await bcrypt.hash(req.body.Password, 10);
         }
 
-        // Find user and update
+        // Perform the update operation
         const updatedUser = await Users.findOneAndUpdate(
-            { username: req.params.Username },
-            { $set: updatedFields },
-            { new: true }  // Return the updated user document
+            { Username: req.params.Username },               // Match Username (case-insensitive if needed)
+            { $set: updatedFields },                         // Update fields
+            { new: true }                                    // Return the updated document
         );
 
         if (!updatedUser) {
             return res.status(404).send('User not found');
         }
 
-        // Return the updated user
+        // Return the updated user data
         return res.json(updatedUser);
     } catch (err) {
-        console.error('Error:', err);
         return res.status(500).send('Error: ' + err.message);
     }
 });
